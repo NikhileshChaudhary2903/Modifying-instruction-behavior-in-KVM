@@ -1,0 +1,42 @@
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 19adbb418443..761f1a51c1e0 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -27,6 +27,8 @@
+ #include "trace.h"
+ #include "pmu.h"
+ 
++int toggle = 0;
++
+ static u32 xstate_required_size(u64 xstate_bv, bool compacted)
+ {
+ 	int feature_bit = 0;
+@@ -883,7 +885,27 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
+ 
+ 	eax = kvm_register_read(vcpu, VCPU_REGS_RAX);
+ 	ecx = kvm_register_read(vcpu, VCPU_REGS_RCX);
+-	kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx);
++
++	if(eax==0x0){
++   	 	if(toggle){
++   		 	eax=0xd;
++			ebx=0x45504d43;
++			ecx=0x45504d43;
++			edx=0x3338325f;
++   		}
++   		else{
++   			kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx);
++   		}
++    	}
++    	else if(eax==0x4fffffff){
++   		toggle = toggle?0:1;
++   		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx);
++    	}
++	else{
++		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx);
++	}
++
++	//kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx);
+ 	kvm_register_write(vcpu, VCPU_REGS_RAX, eax);
+ 	kvm_register_write(vcpu, VCPU_REGS_RBX, ebx);
+ 	kvm_register_write(vcpu, VCPU_REGS_RCX, ecx);
